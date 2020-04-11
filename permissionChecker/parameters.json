@@ -1,0 +1,12 @@
+{
+  "Version": "1.0",
+  "Parameters": {
+    "RuleName": "permissionChecker",
+    "SourceRuntime": "python3.6",
+    "CodeKey": "permissionChecker.zip",
+    "InputParameters": "{}",
+    "OptionalParameters": "{}",
+    "SourceEvents": "AWS::IAM::Role"
+  },
+  "Tags": "{\"AWS RDK Config Rule\": \"permissionChecker\"}"
+}
