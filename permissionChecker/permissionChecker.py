@@ -83,6 +83,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
 
     
         #if you make it this far, you're green
+    print('{} has no-known entitlement problems'.format(ci["configurationItem"]["arn"]))
     return 'COMPLIANT'
 
         
@@ -98,7 +99,6 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     ###############################
     # Add your custom logic here. #
     ###############################
-    return 'NOT_APPLICABLE'
 
 
 def checkDataAccess(sid):
