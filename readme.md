@@ -26,6 +26,8 @@ This will was written using the AWS RDK (https://github.com/awslabs/aws-config-r
 
 -make it easier 
 
+-Cloudformation and terraform deployments
+
 ## Requirements
 
 only requires boto3 and the aws rdk
@@ -48,6 +50,60 @@ rdk deploy permissionChecker
 ```
 
 rdk deployment assumes that you have sufficient permissions and a properly setup environment. if any doubts, please refer to the RDK manual.
+
+### Permissions for the lambda function
+
+By chance, the default rdk entitlement creasted for lambfa functions is almost perfectly least privileged. It will use the below, except with STS:AssumeRole on resource *, which is actually something we'd consider a risky entitlement.
+This IAM policy is sufficient for the rule to run, and with no further intervention you'll get the below policy with sts:assumerole * attached as an inline-policy to your lambda role.
+
+Some release down the road will use support creating this as a managed policy and handle it for you.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::<BucketNameHostingLambdaZip>",
+            "Effect": "Allow",
+            "Sid": "1"
+        },
+        {
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "2"
+        },
+        {
+            "Action": [
+                "config:PutEvaluations"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "3"
+        },
+        {
+            "Action": [
+                "iam:List*",
+                "iam:Describe*",
+                "iam:Get*"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "4"
+        }
+    ]
+}
+```
+
+
 
 ## testing
 
