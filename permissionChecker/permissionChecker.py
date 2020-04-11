@@ -27,6 +27,7 @@ except ImportError:
 ##############
 
 # Define the default resource to report to Config Rules
+# Note that this DOES NOT prevent this from being ran against an IAM user
 DEFAULT_RESOURCE_TYPE = 'AWS::IAM::Role'
 
 # Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
