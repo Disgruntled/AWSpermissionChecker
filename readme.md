@@ -2,29 +2,37 @@
 
 Better name pending.
 
-This is an AWS config rule code (alongside some unit tests) that you can deploy into your environment to help monitor your IAM roles for over entitlement.
+This is an AWS config rule code (alongside some unit tests) that you can deploy into your environment to help monitor your IAM roles/users for over entitlement.
 
 This will was written using the AWS RDK (https://github.com/awslabs/aws-config-rdk) for testing, and can be deployed using the config RDK as well.
 
+## How it works / Modification
+
+The heavy lifting is done in the checkDataAccess method.
+
+statement ID's are extracted from IAM policies, and sent to checkDataAccess. checkDataAccess determines if it's an allow or a deny, then begins looking for toxic combinations of the resource: and action: field
+
+This function can easily be extended by a layperson with IAM experience by modifying any one of the statements present within.
+
 ## Features of this version
 
--Check AWS roles for bad entitlements everytime a role changes
+-Check AWS roles and users for bad entitlements everytime the role or user changes
 
--report NON_COMPLIANT or COMPLIANT back to config
+-Report NON_COMPLIANT or COMPLIANT back to config
 
--detailed logs in cloudwatch
+-Detailed logs in cloudwatch
+
+-Regex-based filtering in code of users/roles you want exxclused
+
+-Unit tests
 
 ## Major Todos:
 
 -Create companion that looks at when policy changes
 
--Add filter for roles should have entitlements (admins)
-
--break out some pieces of code into config
+-break out some pieces of code into config (exclusion rule, badPatterns, logging messages)
 
 -support reading in-line policies (gross!)
-
--make it easier 
 
 -Cloudformation and terraform deployments
 
@@ -33,7 +41,14 @@ This will was written using the AWS RDK (https://github.com/awslabs/aws-config-r
 only requires boto3 and the aws rdk
 
 ```
+pip3 install botocore
 pip3 install boto3
+```
+
+or with the provided requirements.txt file:
+
+```
+pip3 install -r requirements.txt
 ```
 
 To install the AWS RDK, please follow the most up to date documentation on their website
