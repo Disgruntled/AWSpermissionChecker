@@ -18,6 +18,7 @@ This will was written using the AWS RDK (https://github.com/awslabs/aws-config-r
 -Add filter for roles should have entitlements (admins)
 -break out some pieces of code into config
 -support reading in-line policies (gross!)
+-make it easier 
 
 ## Requirements
 
@@ -40,6 +41,8 @@ cd to the directory to the directory containing the permissionChecker FOLDER and
 rdk deploy permissionChecker
 ```
 
+rdk deployment assumes that you have sufficient permissions and a properly setup environment. if any doubts, please refer to the RDK manual.
+
 ## testing
 
 ```
@@ -49,5 +52,10 @@ rdk test-local permissionChecker
 this will execute permissionChecker_test.py 
 
 This accepts a --verbose flag to display stdout/stderr. That functionality was actually added to RDK by me, how neat.
+
+The test scenarios I've provided currently assume that you have iam:getpolicy and iam:getpolicyversion, and a properly setup aws environment.
+
+the tests attempt to get aws resources that are in my AWS account. For the tests to work for anyone who isnt me in their current iteration, you must update the 'policyArn' fields in the same events in permissionChecker_test.py
+
 
 
