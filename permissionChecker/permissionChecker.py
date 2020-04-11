@@ -141,7 +141,7 @@ def checkDataAccess(sid):
     #Look for privilege escalation patterns
     #Shoutout to Rhinosec, doing the hard work for me in aws_escalate.py
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
-        message = "Possible privilege escalation entitlement"     
+        message = "privilege escalation vector"     
         badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
         'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
         if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
@@ -162,16 +162,22 @@ def checkList(actions, badPatterns,message=None):
         Necesarry because IAM statements can have on or many actions, one is treated as as an str, many is a list
     '''
 
+    compliance = ""
+
     if isinstance(actions, list) == False:
-        if checkAction(actions,badPatterns) == 'NON_COMPLIANT':
+        if checkAction(actions,badPatterns, message) == 'NON_COMPLIANT':
             return 'NON_COMPLIANT'
     else:
         for action in actions:
-            if checkAction(action,badPatterns) == 'NON_COMPLIANT':
-                return 'NON_COMPLIANT'
+            if checkAction(action,badPatterns, message) == 'NON_COMPLIANT':
+                compliance = "NON_COMPLIANT"
+
+    if compliance == "NON_COMPLIANT":
+        return 'NON_COMPLIANT'
+                
 
 
-def checkAction(action,badPatterns):
+def checkAction(action,badPatterns, message):
     '''
         Checks an individual action statement for badness when combined with resource = *
 
@@ -183,7 +189,7 @@ def checkAction(action,badPatterns):
 
     for pattern in badPatterns:
         if action.lower() == pattern.lower():
-            print('Found Bad Action {}'.format(action))
+            print('Found Bad Action {}. it is a possible {}'.format(action, message))
             return 'NON_COMPLIANT'
 
     
