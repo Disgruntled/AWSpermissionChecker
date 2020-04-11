@@ -9,15 +9,21 @@ This will was written using the AWS RDK (https://github.com/awslabs/aws-config-r
 ## Features of this version
 
 -Check AWS roles for bad entitlements everytime a role changes
+
 -report NON_COMPLIANT or COMPLIANT back to config
+
 -detailed logs in cloudwatch
 
 ## Major Todos:
 
 -Create companion that looks at when policy changes
+
 -Add filter for roles should have entitlements (admins)
+
 -break out some pieces of code into config
+
 -support reading in-line policies (gross!)
+
 -make it easier 
 
 ## Requirements
