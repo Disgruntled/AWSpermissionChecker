@@ -83,7 +83,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
 
     
         #if you make it this far, you're green
-    print('{} has no-known entitlement problems'.format(ci["configurationItem"]["arn"]))
+    print('{} has no-known entitlement problems'.format(ci["configurationItem"]["configuration"]["arn"]))
     return 'COMPLIANT'
 
         
