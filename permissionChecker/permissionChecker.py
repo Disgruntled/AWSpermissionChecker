@@ -16,6 +16,7 @@ import sys
 import datetime
 import boto3
 import botocore
+import re
 
 try:
     import liblogging
@@ -58,15 +59,25 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     2 -- if a None or a list of dictionary is returned, the old evaluation(s) which are not returned in the new evaluation list are returned as NOT_APPLICABLE by the Boilerplate code
     3 -- if None or an empty string, list or dict is returned, the Boilerplate code will put a "shadow" evaluation to feedback that the evaluation took place properly
     """
-  
-    #TODO: Add exception logic so that people like "admins" don't get alerted upon. Someone needs this access, just not everyone
+
+    
+    ci = json.loads(event['invokingEvent'])
+    principalArn = ci["configurationItem"]["configuration"]["arn"]
+
+    ###Exclude based on regular expression. Update to match roles/users that you want excluded.
+    ###TODO: make more robust to support multiple patterns more easily.
+    exclude = re.compile('excludepattern')
+    if exclude.search(principalArn.lower()) != None:
+        print('{} matches exclude pattern, halting evaluation'.format(principalArn))
+        return 'COMPLIANT'
     
     iamClient = boto3.client('iam')
 
     #Loop through all attached managed policies, and scan them for bad permissions.
     #extracts all the attached managed policies from the event
 
-    ci = json.loads(event['invokingEvent'])
+ 
+
     for foo in ci["configurationItem"]["configuration"]["attachedManagedPolicies"]:
         policy = iamClient.get_policy(PolicyArn=foo["policyArn"])
         policyVersion = policy['Policy']['DefaultVersionId']
@@ -77,7 +88,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
             if checkDataAccess(bar) == 'NON_COMPLIANT':
     #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))
-                print('Found in policy: {} Attached to role {}'.format(foo['policyArn'],ci["configurationItem"]["configuration"]["arn"]))
+                print('Found in policy: {} Attached to role {}'.format(foo['policyArn'],principalArn))
                 return 'NON_COMPLIANT'
         
 
