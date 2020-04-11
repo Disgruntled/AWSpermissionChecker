@@ -206,11 +206,12 @@ class ComplianceTest(unittest.TestCase):
     def test_sample(self):
         self.assertTrue(True)
 
-###############################################################################################
-# Test IAM role with multiple managed policies, at least 1 of which triggers a NON_COMPLIANT
-# Testing assumes and requires available AWS entitlements to read IAM
-###############################################################################################
+
     def test_sample_2(self):
+        '''
+        Test IAM role with multiple managed policies, at least 1 of which triggers a NON_COMPLIANT
+        Testing assumes and requires available AWS entitlements to read IAM
+        '''
         RULE.ASSUME_ROLE_MODE = False
         response = RULE.lambda_handler(build_lambda_configurationchange_event(self.sampleEvent1), {})
         resp_expected = []
@@ -218,16 +219,17 @@ class ComplianceTest(unittest.TestCase):
         resp_expected.append(build_expected_response('NON_COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))
         assert_successful_evaluation(self, response, resp_expected)
 
-###############################################################################################
-# Test IAM role with one managed policy, which triggers COMPLIANT
-# Testing assumes and requires available AWS entitlements to read IAM
-###############################################################################################
+
 
     def test_sample_3(self):
+        '''
+        Test IAM role with one managed policy, which triggers NON_COMPLIANT
+        Testing assumes and requires available AWS entitlements to read IAM
+        '''
         RULE.ASSUME_ROLE_MODE = False
         response = RULE.lambda_handler(build_lambda_configurationchange_event(self.sampleEvent2), {})
         resp_expected = []
-        resp_expected.append(build_expected_response('COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))
+        resp_expected.append(build_expected_response('NON_COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))
         assert_successful_evaluation(self, response, resp_expected)        
 
 

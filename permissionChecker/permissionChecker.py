@@ -103,44 +103,82 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
 
 def checkDataAccess(sid):
     '''
+        This is the function that does all the heavy lifting of the script
+
         takes a statement id "sid" of an IAM policy, checks it for over entitlement
 
-        Works it's way back, looks for resource * (or similar global read patterns for S3), then checks for data access (s3:getobject, etc)
+        We can combine resource statements with 'badpatterns' (bad actions) and run checks with them. We only look for entitlement (allows), and don't mess with denies.
 
-        on the first occurence of a NON_COMPLIANT finding, we go back to the top and stop checking. 
+        Current version does not assume an SCP or IAM boundary compensating. Defense in depth.
+
+        A single occurence of a bad finding will cause a role/user to be marked as 'NON_COMPLIANT', but we keep iterating incase there are multiple findings.
     '''
+
+    compliance = ""
+
+    #Look for access to too mnay data sources
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
-        if checkList(sid['Action']) == 'NON_COMPLIANT':
-            return 'NON_COMPLIANT'
-    #TODO: more robust testing for suspicious resource patterns
-    #elif sid['Resource'] == 'arn:aws:s3:::*':
+        #Setting a new bad patterns for every check
+        message = "Data Access Risky Entitlement"
+        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords','*:*', 'iam:passrole']
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+            compliance = "NON_COMPLIANT"
 
-    #elif sid['Resource'] == 'arn:aws:s3:::*/*':
+    #Look for bad things that are specifically bad for s3
+    if sid['Resource'] == 'arn:aws:s3:::*' and sid['Effect'] == 'Allow':
+        message = "S3 Access Risky Entitlement"        
+        badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+            compliance = "NON_COMPLIANT"
 
+    #Look for some more bad s3 patterns
+    if sid['Resource'] == 'arn:aws:s3:::*/*' and sid['Effect'] == 'Allow':
+        message = "S3 Access Risky Entitlement"     
+        badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+            compliance = "NON_COMPLIANT"
 
-def checkList(actions):
+    #Look for privilege escalation patterns
+    #Shoutout to Rhinosec, doing the hard work for me in aws_escalate.py
+    if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
+        message = "Possible privilege escalation entitlement"     
+        badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
+        'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+            compliance = "NON_COMPLIANT"
+
+    if compliance == "NON_COMPLIANT":
+        return 'NON_COMPLIANT'
+    
+    ################################################
+    ################################################
+    ################################################
+
+def checkList(actions, badPatterns,message=None):
     '''
-        expects a an Iam action(string) or IAM actions(list)
+        expects an Iam action(string) or IAM actions(list) and a list of bad actions that are 'bad' and an optional detailed 'message' for cloudwatch to help identify/remediate.
         used from checkDataAccess() to direct the actions statement to be handled correct
+
+        Necesarry because IAM statements can have on or many actions, one is treated as as an str, many is a list
     '''
 
     if isinstance(actions, list) == False:
-        if checkAction(actions) == 'NON_COMPLIANT':
+        if checkAction(actions,badPatterns) == 'NON_COMPLIANT':
             return 'NON_COMPLIANT'
     else:
         for action in actions:
-            if checkAction(action) == 'NON_COMPLIANT':
+            if checkAction(action,badPatterns) == 'NON_COMPLIANT':
                 return 'NON_COMPLIANT'
 
 
-def checkAction(action):
+def checkAction(action,badPatterns):
     '''
         Checks an individual action statement for badness when combined with resource = *
+
     '''
     #TODO:move badPatterns list into a config file that can be managed outside of code
 
     #badPatterns kept lowercase, uncertainty about the data integrity upstream so we lower it here
-    badPatterns = ['s3:getobject','s3;get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords','*:*', 'iam:passrole']
 
 
     for pattern in badPatterns:
