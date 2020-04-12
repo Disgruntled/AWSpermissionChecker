@@ -22,7 +22,7 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 -Detailed logs in cloudwatch
 
--Regex-based filtering in code of users/roles you want exxclused
+-Regex-based filtering in code of users/roles you want excluded
 
 -Unit tests
 
@@ -68,7 +68,7 @@ rdk deployment assumes that you have sufficient permissions and a properly setup
 
 ### Permissions for the lambda function
 
-By chance, the default rdk entitlement creasted for lambfa functions is almost perfectly least privileged. It will use the below, except with STS:AssumeRole on resource *, which is actually something we'd consider a risky entitlement.
+By chance, the default rdk entitlement creasted for lambda functions is almost perfectly least privileged. It will use the below, except with STS:AssumeRole on resource *, which is actually something we'd consider a risky entitlement.
 This IAM policy is sufficient for the rule to run, and with no further intervention you'll get the below policy with sts:assumerole * attached as an inline-policy to your lambda role.
 
 Some release down the road will use support creating this as a managed policy and handle it for you.
