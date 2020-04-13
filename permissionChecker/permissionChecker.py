@@ -128,26 +128,32 @@ def checkDataAccess(sid):
     '''
 
     compliance = ""
+    try:
+        condition = sid['Condition']
+        print(condition)
+    except:
+        condition = None
+
     #Look for access to too mnay data sources
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
         #Setting a new bad patterns for every check
         message = "Data Store Access Risky Entitlement"
         badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for bad things that are specifically bad for s3
     if sid['Resource'] == 'arn:aws:s3:::*' and sid['Effect'] == 'Allow':
         message = "S3 Access Risky Entitlement"        
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for some more bad s3 patterns
     if sid['Resource'] == 'arn:aws:s3:::*/*' and sid['Effect'] == 'Allow':
         message = "S3 Access Risky Entitlement"     
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for privilege escalation patterns
@@ -156,13 +162,13 @@ def checkDataAccess(sid):
         message = "privilege escalation vector"   
         badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
         'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
         message = "full admin entitlement"   
         badPatterns = ['*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
            
@@ -174,7 +180,7 @@ def checkDataAccess(sid):
     ################################################
     ################################################
 
-def checkList(actions, badPatterns,message=None):
+def checkList(actions, badPatterns,message=None,condition=None):
     '''
         expects an Iam action(string) or IAM actions(list) and a list of bad actions that are 'bad' and an optional detailed 'message' for cloudwatch to help identify/remediate.
         used from checkDataAccess() to direct the actions statement to be handled correct
@@ -185,11 +191,11 @@ def checkList(actions, badPatterns,message=None):
     compliance = ""
 
     if isinstance(actions, list) == False:
-        if checkAction(actions,badPatterns, message) == 'NON_COMPLIANT':
+        if checkAction(actions,badPatterns, message, condition) == 'NON_COMPLIANT':
             return 'NON_COMPLIANT'
     else:
         for action in actions:
-            if checkAction(action,badPatterns, message) == 'NON_COMPLIANT':
+            if checkAction(action,badPatterns, message,condition) == 'NON_COMPLIANT':
                 compliance = "NON_COMPLIANT"
 
     if compliance == "NON_COMPLIANT":
@@ -197,7 +203,7 @@ def checkList(actions, badPatterns,message=None):
                 
 
 
-def checkAction(action,badPatterns, message):
+def checkAction(action,badPatterns, message,condition=None):
     '''
         Checks an individual action statement for badness when combined with resource = *
 
@@ -209,6 +215,9 @@ def checkAction(action,badPatterns, message):
 
     for pattern in badPatterns:
         if action.lower() == pattern.lower():
+            if condition != None:
+                if condition['IpAddress']['aws:SourceIp'] == '127.0.0.1/32':
+                    return 'COMPLIANT'
             print('Found Bad Action {}. it is a possible {}'.format(action, message))
             return 'NON_COMPLIANT'
 
