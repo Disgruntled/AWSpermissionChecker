@@ -34,6 +34,123 @@ DEFAULT_RESOURCE_TYPE = 'AWS::IAM::Role'
 CONFIG_CLIENT_MOCK = MagicMock()
 STS_CLIENT_MOCK = MagicMock()
 
+###########################
+#Definining the output of iam.get_policy and iam.get_policy_version. The RDK boilerplate is using magicmock elsehwere, so for consistency we are sticking with it.
+#Intrepid developers who want to test policies should can modify the get_policy and get_policy_version responses suitably.
+#You most likely just want to add/remove/edit statements id (SIDS) in the get_policy_version return value.
+###########################
+IAM_CLIENT_MOCK = MagicMock()
+
+IAM_CLIENT_MOCK.get_policy.return_value = {
+   "Policy":{
+      "PolicyName":"broken_bucket_admin",
+      "PolicyId":"ANPAICTZAYSZXH6ZTO2XO",
+      "Arn":"arn:aws:iam::123456789012:policy/broken_bucket_admin",
+      "Path":"/",
+      "DefaultVersionId":"v4",
+      "AttachmentCount":1,
+      "PermissionsBoundaryUsageCount":0,
+      "IsAttachable":True,
+      "Description":"just a test",
+},
+   "ResponseMetadata":{
+      "RequestId":"0ef08c84-48d8-4e05-8422-56e582e3e837",
+      "HTTPStatusCode":200,
+      "HTTPHeaders":{
+         "x-amzn-requestid":"0ef08c84-48d8-4e05-8422-56e582e3e837",
+         "content-type":"text/xml",
+         "content-length":"806",
+         "date":"Mon, 13 Apr 2020 00:51:40 GMT"
+      
+},
+      "RetryAttempts":0
+   
+}
+}
+
+
+IAM_CLIENT_MOCK.get_policy_version.return_value = {
+   "PolicyVersion":{
+      "Document":{
+         "Version":"2012-10-17",
+         "Statement":[
+            {
+               "Sid":"VisualEditor0",
+               "Effect":"Allow",
+               "Action":[
+                  "s3:PutAccountPublicAccessBlock",
+                  "s3:GetAccountPublicAccessBlock",
+                  "s3:ListAllMyBuckets",
+                  "s3:HeadBucket"
+               
+],
+               "Resource":"*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.2/32"
+                  
+}
+               
+}
+            
+},
+            {
+               "Sid":"VisualEditor1",
+               "Effect":"Allow",
+               "Action":"s3:*",
+               "Resource":"arn:aws:s3:::*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.1/32"
+                  
+}
+               
+}
+            
+},
+            {
+               "Sid":"VisualEditor2",
+               "Effect":"Allow",
+               "Action":"s3:*",
+               "Resource":"arn:aws:s3:::*/*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.1/32"
+                  
+}
+               
+}
+            
+},
+
+         
+]
+      
+},
+      "VersionId":"v4",
+      "IsDefaultVersion":True,
+   
+},
+   "ResponseMetadata":{
+      "RequestId":"58b76237-982c-415b-ad61-8eda8f922b81",
+      "HTTPStatusCode":200,
+      "HTTPHeaders":{
+         "x-amzn-requestid":"58b76237-982c-415b-ad61-8eda8f922b81",
+         "content-type":"text/xml",
+         "content-length":"3098",
+         "vary":"accept-encoding",
+         "date":"Mon, 13 Apr 2020 00:52:05 GMT"
+      
+},
+      "RetryAttempts":0
+   
+}
+}
+
+#########################
+#End IAM data declaration
+#########################
+
 #Note: if you want to put more boto clients into your config rule, you must override them here in order for your test to be succesful.
 class Boto3Mock():
     @staticmethod
@@ -43,7 +160,7 @@ class Boto3Mock():
         if client_name == 'sts':
             return STS_CLIENT_MOCK
         if client_name == 'iam':
-            return boto3.client('iam')
+            return IAM_CLIENT_MOCK
         raise Exception("Attempting to create an unknown client")
 
 sys.modules['boto3'] = Boto3Mock()
@@ -63,12 +180,12 @@ class ComplianceTest(unittest.TestCase):
     "notificationCreationTime":"2017-12-23T22:11:18.158Z",
     "configurationItem": {
         "version": "1.2",
-        "accountId": "264683526309",
+        "accountId": "123456789012",
         "configurationItemCaptureTime": "2016-11-06T03:41:52.719Z",
         "configurationItemStatus": "OK",
         "configurationStateId": "1478403712719",
         "configurationItemMD5Hash": "91a47a3c0184f9b29cfb3e354ff887dd",
-        "arn": "arn:aws:iam::264683526309:role/service-role/config-role-ezcrc2",
+        "arn": "arn:aws:iam::123456789012:role/service-role/config-role-ezcrc2",
         "resourceType": "AWS::IAM::Role",
         "resourceId": "AROAIY7FPU7KRV7IZBNPC",
         "resourceName": "config-role-ezcrc2",
@@ -95,7 +212,7 @@ class ComplianceTest(unittest.TestCase):
             "path": "/service-role/",
             "roleName": "config-role-ezcrc2",
             "roleId": "AROAIY7FPU7KRV7IZBNPC",
-            "arn": "arn:aws:iam::264683526309:role/service-role/config-role-ezcrc2",
+            "arn": "arn:aws:iam::123456789012:role/service-role/config-role-ezcrc2",
             "createDate": "2016-03-10T23:52:10.000Z",
             "assumeRolePolicyDocument": {
                 "Version": "2012-10-17",
@@ -115,15 +232,15 @@ class ComplianceTest(unittest.TestCase):
             "attachedManagedPolicies": [
                 {
                     "policyName": "broken_bucket_admin",
-                    "policyArn": "arn:aws:iam::412138580445:policy/broken_bucket_admin"
+                    "policyArn": "arn:aws:iam::123456789012:policy/broken_bucket_admin"
                 },
                 {
                     "policyName": "STS_ASSUME_ONLY",
-                    "policyArn": "arn:aws:iam::412138580445:policy/STS_ASSUME_ONLY"
+                    "policyArn": "arn:aws:iam::123456789012:policy/STS_ASSUME_ONLY"
                 },
                 {
                     "policyName": "cloudformation_ec2_all",
-                    "policyArn": "arn:aws:iam::412138580445:policy/cloudformation_ec2_all"
+                    "policyArn": "arn:aws:iam::123456789012:policy/cloudformation_ec2_all"
                 }
             ]
         },
@@ -132,72 +249,7 @@ class ComplianceTest(unittest.TestCase):
     }
 '''
 
-    sampleEvent2 = '''
-    {
-    "messageType":"ConfigurationItemChangeNotification",
-    "notificationCreationTime":"2017-12-23T22:11:18.158Z",
-    "configurationItem": {
-        "version": "1.2",
-        "accountId": "264683526309",
-        "configurationItemCaptureTime": "2016-11-06T03:41:52.719Z",
-        "configurationItemStatus": "OK",
-        "configurationStateId": "1478403712719",
-        "configurationItemMD5Hash": "91a47a3c0184f9b29cfb3e354ff887dd",
-        "arn": "arn:aws:iam::264683526309:role/service-role/config-role-ezcrc2",
-        "resourceType": "AWS::IAM::Role",
-        "resourceId": "AROAIY7FPU7KRV7IZBNPC",
-        "resourceName": "config-role-ezcrc2",
-        "awsRegion": "global",
-        "availabilityZone": "Not Applicable",
-        "resourceCreationTime": "2016-03-10T23:52:10.000Z",
-        "tags": {},
-        "relatedEvents": [],
-        "relationships": [
-            {
-                "resourceType": "AWS::IAM::Policy",
-                "resourceId": "ANPAIJWML3NX3NT6UAGO4",
-                "resourceName": "ELB-policy",
-                "relationshipName": "Is attached to CustomerManagedPolicy"
-            },
-            {
-                "resourceType": "AWS::IAM::Policy",
-                "resourceId": "ANPAILY3GNWH4C77WJ6QM",
-                "resourceName": "config-role-ezcrc2-AWSConfigDeliveryPermissions-us-west-2",
-                "relationshipName": "Is attached to CustomerManagedPolicy"
-            }
-        ],
-        "configuration": {
-            "path": "/service-role/",
-            "roleName": "config-role-ezcrc2",
-            "roleId": "AROAIY7FPU7KRV7IZBNPC",
-            "arn": "arn:aws:iam::264683526309:role/service-role/config-role-ezcrc2",
-            "createDate": "2016-03-10T23:52:10.000Z",
-            "assumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": "config.amazonaws.com"
-                        },
-                        "Action": "sts:AssumeRole"
-                    }
-                ]
-            },
-            "instanceProfileList": [],
-            "rolePolicyList": [],
-            "attachedManagedPolicies": [
-                {
-                    "policyName": "broken_bucket_admin",
-                    "policyArn": "arn:aws:iam::412138580445:policy/broken_bucket_admin"
-                }
-            ]
-        },
-        "supplementaryConfiguration": {}
-    }
-}
-'''
+
 
 
     def setUp(self):
@@ -218,19 +270,6 @@ class ComplianceTest(unittest.TestCase):
         #If customizing your own event, the resource id (AROAnnn) must match. Update here and in the event.
         resp_expected.append(build_expected_response('NON_COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))
         assert_successful_evaluation(self, response, resp_expected)
-
-
-
-    def test_sample_3(self):
-        '''
-        Test IAM role with one managed policy, which triggers NON_COMPLIANT
-        Testing assumes and requires available AWS entitlements to read IAM
-        '''
-        RULE.ASSUME_ROLE_MODE = False
-        response = RULE.lambda_handler(build_lambda_configurationchange_event(self.sampleEvent2), {})
-        resp_expected = []
-        resp_expected.append(build_expected_response('NON_COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))
-        assert_successful_evaluation(self, response, resp_expected)        
 
 
 ####################
@@ -344,3 +383,139 @@ class TestStsErrors(unittest.TestCase):
         response = RULE.lambda_handler(build_lambda_configurationchange_event('{}'), {})
         assert_customer_error_response(
             self, response, 'AccessDenied', 'AWS Config does not have permission to assume the IAM role.')
+
+#################
+#MOCK DATA
+#################
+
+def get_policy_return():
+    return '''
+{
+   "Policy":{
+      "PolicyName":"broken_bucket_admin",
+      "PolicyId":"ANPAICTZAYSZXH6ZTO2XO",
+      "Arn":"arn:aws:iam::412138580445:policy/broken_bucket_admin",
+      "Path":"/",
+      "DefaultVersionId":"v4",
+      "AttachmentCount":1,
+      "PermissionsBoundaryUsageCount":0,
+      "IsAttachable":True,
+      "Description":"just a test",
+      "CreateDate":datetime.datetime(2019,
+      2,
+      14,
+      16,
+      59,
+      57,
+      "tzinfo=tzutc())",
+      "UpdateDate":datetime.datetime(2020,
+      4,
+      11,
+      0,
+      3,
+      3,
+      "tzinfo=tzutc())"
+   
+},
+   "ResponseMetadata":{
+      "RequestId":"0ef08c84-48d8-4e05-8422-56e582e3e837",
+      "HTTPStatusCode":200,
+      "HTTPHeaders":{
+         "x-amzn-requestid":"0ef08c84-48d8-4e05-8422-56e582e3e837",
+         "content-type":"text/xml",
+         "content-length":"806",
+         "date":"Mon, 13 Apr 2020 00:51:40 GMT"
+      
+},
+      "RetryAttempts":0
+   
+}
+}
+'''
+
+def get_policy_version_return():
+    return '''
+{
+   "PolicyVersion":{
+      "Document":{
+         "Version":"2012-10-17",
+         "Statement":[
+            {
+               "Sid":"VisualEditor0",
+               "Effect":"Allow",
+               "Action":[
+                  "s3:PutAccountPublicAccessBlock",
+                  "s3:GetAccountPublicAccessBlock",
+                  "s3:ListAllMyBuckets",
+                  "s3:HeadBucket"
+               
+],
+               "Resource":"*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.2/32"
+                  
+}
+               
+}
+            
+},
+            {
+               "Sid":"VisualEditor1",
+               "Effect":"Allow",
+               "Action":"s3:*",
+               "Resource":"arn:aws:s3:::*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.1/32"
+                  
+}
+               
+}
+            
+},
+            {
+               "Sid":"VisualEditor2",
+               "Effect":"Allow",
+               "Action":"s3:*",
+               "Resource":"arn:aws:s3:::*/*",
+               "Condition":{
+                  "IpAddress":{
+                     "aws:SourceIp":"127.0.0.1/32"
+                  
+}
+               
+}
+            
+}
+         
+]
+      
+},
+      "VersionId":"v4",
+      "IsDefaultVersion":True,
+      "CreateDate":datetime.datetime(2020,
+      4,
+      11,
+      0,
+      3,
+      3,
+      "tzinfo=tzutc())"
+   
+},
+   "ResponseMetadata":{
+      "RequestId":"58b76237-982c-415b-ad61-8eda8f922b81",
+      "HTTPStatusCode":200,
+      "HTTPHeaders":{
+         "x-amzn-requestid":"58b76237-982c-415b-ad61-8eda8f922b81",
+         "content-type":"text/xml",
+         "content-length":"3098",
+         "vary":"accept-encoding",
+         "date":"Mon, 13 Apr 2020 00:52:05 GMT"
+      
+},
+      "RetryAttempts":0
+   
+}
+}
+'''
