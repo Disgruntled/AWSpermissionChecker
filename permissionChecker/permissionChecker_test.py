@@ -122,6 +122,13 @@ IAM_CLIENT_MOCK.get_policy_version.return_value = {
 }
             
 },
+            {
+               "Sid":"VisualEditor4",
+               "Effect":"Allow",
+               "Action":"*:*",
+               "Resource":"*"
+            
+}
 
          
 ]
@@ -230,14 +237,6 @@ class ComplianceTest(unittest.TestCase):
             "instanceProfileList": [],
             "rolePolicyList": [],
             "attachedManagedPolicies": [
-                {
-                    "policyName": "broken_bucket_admin",
-                    "policyArn": "arn:aws:iam::123456789012:policy/broken_bucket_admin"
-                },
-                {
-                    "policyName": "STS_ASSUME_ONLY",
-                    "policyArn": "arn:aws:iam::123456789012:policy/STS_ASSUME_ONLY"
-                },
                 {
                     "policyName": "cloudformation_ec2_all",
                     "policyArn": "arn:aws:iam::123456789012:policy/cloudformation_ec2_all"
@@ -383,139 +382,3 @@ class TestStsErrors(unittest.TestCase):
         response = RULE.lambda_handler(build_lambda_configurationchange_event('{}'), {})
         assert_customer_error_response(
             self, response, 'AccessDenied', 'AWS Config does not have permission to assume the IAM role.')
-
-#################
-#MOCK DATA
-#################
-
-def get_policy_return():
-    return '''
-{
-   "Policy":{
-      "PolicyName":"broken_bucket_admin",
-      "PolicyId":"ANPAICTZAYSZXH6ZTO2XO",
-      "Arn":"arn:aws:iam::412138580445:policy/broken_bucket_admin",
-      "Path":"/",
-      "DefaultVersionId":"v4",
-      "AttachmentCount":1,
-      "PermissionsBoundaryUsageCount":0,
-      "IsAttachable":True,
-      "Description":"just a test",
-      "CreateDate":datetime.datetime(2019,
-      2,
-      14,
-      16,
-      59,
-      57,
-      "tzinfo=tzutc())",
-      "UpdateDate":datetime.datetime(2020,
-      4,
-      11,
-      0,
-      3,
-      3,
-      "tzinfo=tzutc())"
-   
-},
-   "ResponseMetadata":{
-      "RequestId":"0ef08c84-48d8-4e05-8422-56e582e3e837",
-      "HTTPStatusCode":200,
-      "HTTPHeaders":{
-         "x-amzn-requestid":"0ef08c84-48d8-4e05-8422-56e582e3e837",
-         "content-type":"text/xml",
-         "content-length":"806",
-         "date":"Mon, 13 Apr 2020 00:51:40 GMT"
-      
-},
-      "RetryAttempts":0
-   
-}
-}
-'''
-
-def get_policy_version_return():
-    return '''
-{
-   "PolicyVersion":{
-      "Document":{
-         "Version":"2012-10-17",
-         "Statement":[
-            {
-               "Sid":"VisualEditor0",
-               "Effect":"Allow",
-               "Action":[
-                  "s3:PutAccountPublicAccessBlock",
-                  "s3:GetAccountPublicAccessBlock",
-                  "s3:ListAllMyBuckets",
-                  "s3:HeadBucket"
-               
-],
-               "Resource":"*",
-               "Condition":{
-                  "IpAddress":{
-                     "aws:SourceIp":"127.0.0.2/32"
-                  
-}
-               
-}
-            
-},
-            {
-               "Sid":"VisualEditor1",
-               "Effect":"Allow",
-               "Action":"s3:*",
-               "Resource":"arn:aws:s3:::*",
-               "Condition":{
-                  "IpAddress":{
-                     "aws:SourceIp":"127.0.0.1/32"
-                  
-}
-               
-}
-            
-},
-            {
-               "Sid":"VisualEditor2",
-               "Effect":"Allow",
-               "Action":"s3:*",
-               "Resource":"arn:aws:s3:::*/*",
-               "Condition":{
-                  "IpAddress":{
-                     "aws:SourceIp":"127.0.0.1/32"
-                  
-}
-               
-}
-            
-}
-         
-]
-      
-},
-      "VersionId":"v4",
-      "IsDefaultVersion":True,
-      "CreateDate":datetime.datetime(2020,
-      4,
-      11,
-      0,
-      3,
-      3,
-      "tzinfo=tzutc())"
-   
-},
-   "ResponseMetadata":{
-      "RequestId":"58b76237-982c-415b-ad61-8eda8f922b81",
-      "HTTPStatusCode":200,
-      "HTTPHeaders":{
-         "x-amzn-requestid":"58b76237-982c-415b-ad61-8eda8f922b81",
-         "content-type":"text/xml",
-         "content-length":"3098",
-         "vary":"accept-encoding",
-         "date":"Mon, 13 Apr 2020 00:52:05 GMT"
-      
-},
-      "RetryAttempts":0
-   
-}
-}
-'''

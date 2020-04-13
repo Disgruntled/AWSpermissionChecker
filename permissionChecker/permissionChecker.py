@@ -89,10 +89,12 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))
                 print('Found in policy: {} Attached to role {}'.format(foo['policyArn'],principalArn))
-                return 'NON_COMPLIANT'
+                compliance = "NON_COMPLIANT"
         
 
-    
+    if compliance == "NON_COMPLIANT":
+        return 'NON_COMPLIANT'
+
         #if you make it this far, you're green
     print('{} has no-known entitlement problems'.format(ci["configurationItem"]["configuration"]["arn"]))
     return 'COMPLIANT'
@@ -126,12 +128,11 @@ def checkDataAccess(sid):
     '''
 
     compliance = ""
-
     #Look for access to too mnay data sources
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
         #Setting a new bad patterns for every check
-        message = "Data Access Risky Entitlement"
-        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords','*:*', 'iam:passrole']
+        message = "Data Store Access Risky Entitlement"
+        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
         if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
@@ -152,11 +153,19 @@ def checkDataAccess(sid):
     #Look for privilege escalation patterns
     #Shoutout to Rhinosec, doing the hard work for me in aws_escalate.py
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
-        message = "privilege escalation vector"     
+        message = "privilege escalation vector"   
         badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
         'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
         if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
+
+    if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
+        message = "full admin entitlement"   
+        badPatterns = ['*:*']
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+            compliance = "NON_COMPLIANT"
+
+           
 
     if compliance == "NON_COMPLIANT":
         return 'NON_COMPLIANT'
