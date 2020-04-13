@@ -36,8 +36,6 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 -Cloudformation and terraform deployments
 
--Write better unit tests with mock objects for IAM, Removing dependency on updating config items in permissionChecker_test.py
-
 ## Requirements
 
 only requires boto3 and the aws rdk
