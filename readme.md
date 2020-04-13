@@ -4,7 +4,7 @@ Better name pending.
 
 This is an AWS config rule code (alongside some unit tests) that you can deploy into your environment to help monitor your IAM roles/users for over entitlement.
 
-This will was written using the AWS RDK (https://github.com/awslabs/aws-config-rdk) for testing, and can be deployed using the config RDK as well.
+This will was written using the AWS RDK <https://github.com/awslabs/aws-config-rdk> for testing, and can be deployed using the config RDK as well.
 
 ## How it works / Modification
 
@@ -24,9 +24,9 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 -Regex-based filtering in code of users/roles you want excluded
 
--Unit tests
+-Unit tests (no aws credentials or environment required for local testing anymore!)
 
-## Major Todos:
+## Major Todos
 
 -Create companion that looks at when policy changes
 
@@ -42,19 +42,18 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 only requires boto3 and the aws rdk
 
-```
+```shell
 pip3 install botocore
 pip3 install boto3
 ```
 
 or with the provided requirements.txt file:
 
-```
+```shell
 pip3 install -r requirements.txt
 ```
 
 To install the AWS RDK, please follow the most up to date documentation on their website
-
 
 ## Deployment
 
@@ -62,7 +61,7 @@ Out of the box deployment is only setup now via AWS RDK (cloudformation), but ob
 
 cd to the directory to the directory containing the permissionChecker FOLDER and:
 
-```
+```shell
 rdk deploy permissionChecker
 ```
 
@@ -120,21 +119,12 @@ Some release down the road will use support creating this as a managed policy an
 }
 ```
 
-
-
 ## testing
 
-```
+```shell
 rdk test-local permissionChecker
 ```
 
-this will execute permissionChecker_test.py 
+this will execute permissionChecker_test.py
 
 This accepts a --verbose flag to display stdout/stderr. That functionality was actually added to RDK by me, how neat.
-
-The test scenarios I've provided currently assume that you have iam:getpolicy and iam:getpolicyversion, and a properly setup aws environment.
-
-the tests attempt to get aws resources that are in my AWS account. For the tests to work for anyone who isnt me in their current iteration, you must update the 'policyArn' fields in the same events in permissionChecker_test.py
-
-
-
