@@ -205,47 +205,46 @@ def checkDataAccess(sid):
         message = "Data Store Access Risky Entitlement"
         badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
         if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
-            compliance = "NON_COMPLIANT"
-            
-    if compliance == "NON_COMPLIANT":
-        return 'NON_COMPLIANT'            
-'''
+            compliance = "NON_COMPLIANT"        
+
     #Look for bad things that are specifically bad for s3
-    if sid['Resource'] == 'arn:aws:s3:::*' and sid['Effect'] == 'Allow':
+    if sid.Resource == 'arn:aws:s3:::*' and sid.Effect == 'Allow':
         message = "S3 Access Risky Entitlement"        
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for some more bad s3 patterns
-    if sid['Resource'] == 'arn:aws:s3:::*/*' and sid['Effect'] == 'Allow':
+    if sid.Resource == 'arn:aws:s3:::*/*' and sid.Effect == 'Allow':
         message = "S3 Access Risky Entitlement"     
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for privilege escalation patterns
     #Shoutout to Rhinosec, doing the hard work for me in aws_escalate.py
-    if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
+    if sid.Resource == '*' and sid.Effect == 'Allow':
         message = "privilege escalation vector"   
         badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
         'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
-    if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
+    if sid.Resource == '*' and sid.Effect == 'Allow':
         message = "full admin entitlement"   
         badPatterns = ['*:*']
-        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
+        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
-'''
+
+    if compliance == "NON_COMPLIANT":
+        return 'NON_COMPLIANT'    
 
     
     ################################################
     ################################################
     ################################################
 
-def checkList(actions, badPatterns,message=None,condition=None):
+def checkList(actions, badPatterns,message=None):
     '''
         expects an Iam action(string) or IAM actions(list) and a list of bad actions that are 'bad' and an optional detailed 'message' for cloudwatch to help identify/remediate.
         used from checkDataAccess() to direct the actions statement to be handled correct
