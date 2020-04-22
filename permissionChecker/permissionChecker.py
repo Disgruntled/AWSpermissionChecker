@@ -38,6 +38,75 @@ ASSUME_ROLE_MODE = False
 CONFIG_ROLE_TIMEOUT_SECONDS = 60
 
 #############
+# Classes   #
+#############
+
+class statement:
+    '''
+    object for one policy statement ID or "SID"
+    will assign values for all policy elements, or set "None" where it is undefined
+
+    '''
+
+    def __init__(self,sid):
+        self.Action = ''
+        self.Resource = ''
+        self.NotAction = ''
+        self.notResource = ''
+        self.Condition = ''
+        self.Effect = ''
+        self.Principal = ''
+        self.NotPrincipal = ''
+        self.Sid = ''
+
+        try: 
+            self.Action = sid['Action']
+        except:
+            self.Action = None
+
+        try: 
+            self.NotAction = sid['NotAction']
+        except:
+            self.NotSction = None
+
+        try: 
+            self.Resource = sid['Resource']
+        except:
+            self.Resource = None      
+
+        try: 
+            self.NotResource = sid['NotResource']
+        except:
+            self.NotResource = None
+
+        try: 
+            self.Principal = sid['Principal']
+        except:
+            self.Principal = None      
+                  
+        try: 
+            self.NotPrincipal = sid['NotPrincipal']
+        except:
+            self.NotPrincipal = None   
+
+        try: 
+            self.Condition = sid['Condition']
+        except:
+            self.Condition = None      
+                  
+        try: 
+            self.Sid = sid['Sid']
+        except:
+            self.Sid = None   
+
+        try: 
+            self.Effect = sid['Effect']
+        except:
+            self.Effect = None                     
+
+
+
+#############
 # Main Code #
 #############
 
@@ -85,7 +154,8 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     
         #Loop through alls tatements, look for bad things
         for bar in policyDocument['PolicyVersion']['Document']['Statement']:
-            if checkDataAccess(bar) == 'NON_COMPLIANT':
+            statementBlock = statement(bar)
+            if checkDataAccess(statementBlock) == 'NON_COMPLIANT':
     #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))
                 print('Found in policy: {} Attached to role {}'.format(foo['policyArn'],principalArn))
@@ -128,32 +198,30 @@ def checkDataAccess(sid):
     '''
 
     compliance = ""
-    try:
-        condition = sid['Condition']
-        print(condition)
-    except:
-        condition = None
 
     #Look for access to too mnay data sources
-    if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
+    if sid.Resource == '*' and sid.Effect == 'Allow':
         #Setting a new bad patterns for every check
         message = "Data Store Access Risky Entitlement"
         badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
-        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
-
+            
+    if compliance == "NON_COMPLIANT":
+        return 'NON_COMPLIANT'            
+'''
     #Look for bad things that are specifically bad for s3
     if sid['Resource'] == 'arn:aws:s3:::*' and sid['Effect'] == 'Allow':
         message = "S3 Access Risky Entitlement"        
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for some more bad s3 patterns
     if sid['Resource'] == 'arn:aws:s3:::*/*' and sid['Effect'] == 'Allow':
         message = "S3 Access Risky Entitlement"     
         badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
-        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     #Look for privilege escalation patterns
@@ -162,19 +230,16 @@ def checkDataAccess(sid):
         message = "privilege escalation vector"   
         badPatterns = ['iam:putrolepolicy','iam:putgrouppolicy','iam:putuserpolicy','iam:createloginprofile','iam:setdefaultpolicyversion',
         'iam:createpolicyversion','iam:attachgrouppolicy','iam:attachuserpolicy','iam:attachrolepolicy','iam:updateloginprofile']
-        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
     if sid['Resource'] == '*' and sid['Effect'] == 'Allow':
         message = "full admin entitlement"   
         badPatterns = ['*:*']
-        if checkList(sid['Action'], badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkList(sid['Action'], badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
+'''
 
-           
-
-    if compliance == "NON_COMPLIANT":
-        return 'NON_COMPLIANT'
     
     ################################################
     ################################################
@@ -191,11 +256,11 @@ def checkList(actions, badPatterns,message=None,condition=None):
     compliance = ""
 
     if isinstance(actions, list) == False:
-        if checkAction(actions,badPatterns, message, condition) == 'NON_COMPLIANT':
+        if checkAction(actions,badPatterns, message) == 'NON_COMPLIANT':
             return 'NON_COMPLIANT'
     else:
         for action in actions:
-            if checkAction(action,badPatterns, message,condition) == 'NON_COMPLIANT':
+            if checkAction(action,badPatterns, message) == 'NON_COMPLIANT':
                 compliance = "NON_COMPLIANT"
 
     if compliance == "NON_COMPLIANT":
@@ -203,7 +268,7 @@ def checkList(actions, badPatterns,message=None,condition=None):
                 
 
 
-def checkAction(action,badPatterns, message,condition=None):
+def checkAction(action,badPatterns, message):
     '''
         Checks an individual action statement for badness when combined with resource = *
 
@@ -215,9 +280,6 @@ def checkAction(action,badPatterns, message,condition=None):
 
     for pattern in badPatterns:
         if action.lower() == pattern.lower():
-            if condition != None:
-                if condition['IpAddress']['aws:SourceIp'] == '127.0.0.1/32':
-                    return 'COMPLIANT'
             print('Found Bad Action {}. it is a possible {}'.format(action, message))
             return 'NON_COMPLIANT'
 
