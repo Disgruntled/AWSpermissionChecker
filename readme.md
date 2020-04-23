@@ -32,11 +32,13 @@ if sid.Resource == '*' and sid.Effect == 'Allow':
         compliance = "NON_COMPLIANT"
 ```
 
+What you can check in with this is only limited by your creativity.
+
 ## Exclusion Pattern
 
 This rule accepts 1 config rule parameter, ExceptionPattern, that will contain a pattern which if found in an IAM USER/ROLE will exclude them from compliance monitoring.
 
-This is useful for excluding admins, as we expect someone to have this entitlement.
+This is useful for excluding admins, as we expect someone to have a high level of access.
 
 ## Features of this version
 
