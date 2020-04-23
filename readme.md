@@ -8,11 +8,37 @@ This will was written using the AWS RDK <https://github.com/awslabs/aws-config-r
 
 ## How it works / Modification
 
-The heavy lifting is done in the checkDataAccess method.
+The heavy lifting is done in the checkAccess method.
 
-statement ID's are extracted from IAM policies, and sent to checkDataAccess. checkDataAccess determines if it's an allow or a deny, then begins looking for toxic combinations of the resource: and action: field
+statement ID's are extracted from IAM policies, and sent to checkAccess. checkAccess runs our defined checks against a given IAM statement id (SID), then begins looking for toxic that we define.
+I've included some patterns that are absoloutely toxic and should be avoided on non-admins, but it is very easy for anyone to code up their own check for things that meet their organizations threat model.
 
 This function can easily be extended by a layperson with IAM experience by modifying any one of the statements present within.
+
+Take this example code block from checkAccess
+
+```python
+#First we're checking to see if there is an Allow entitlement,
+#and if that entitlement applies to all resources (resource == '*')
+if sid.Resource == '*' and sid.Effect == 'Allow':
+    #Setting a custom Message to be written to cloudwatch if a there is a finding
+    message = "Data Store Access Risky Entitlement"
+    #Setting a new bad patterns for every check. badPatterns should always be a list even if you want one.
+    badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem',
+    'dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
+    #Sending the 'Action' element of the IAM policy, alongside the list of bad patterns and our message to be checked
+    if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
+    #If there is a bad finding, this compliance must be set to NON_COMPLIANT for config to mark it as such
+        compliance = "NON_COMPLIANT"
+```
+
+What you can check in with this is only limited by your creativity.
+
+## Exclusion Pattern
+
+This rule accepts 1 config rule parameter, ExceptionPattern, that will contain a pattern which if found in an IAM USER/ROLE will exclude them from compliance monitoring.
+
+This is useful for excluding admins, as we expect someone to have a high level of access.
 
 ## Features of this version
 
@@ -22,15 +48,15 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 -Detailed logs in cloudwatch
 
--Regex-based filtering in code of users/roles you want excluded
+-Regex-based filtering in code of users/roles you want excluded (ExceptionPattern rule parameter)
 
 -Unit tests (no aws credentials or environment required for local testing anymore!)
+
+-Supports looking at bad patterns in actions/principals/resources
 
 ## Major Todos
 
 -Create companion that looks at when policy changes
-
--Break out some pieces of code into config (exclusion rule, badPatterns, logging messages)
 
 -Support reading in-line policies (gross!)
 
