@@ -195,6 +195,8 @@ def checkDataAccess(sid):
         Current version does not assume an SCP or IAM boundary compensating. Defense in depth.
 
         A single occurence of a bad finding will cause a role/user to be marked as 'NON_COMPLIANT', but we keep iterating incase there are multiple findings.
+
+        the 'sid' object will return a string or list for all fields, where appropriate
     '''
 
     compliance = ""
