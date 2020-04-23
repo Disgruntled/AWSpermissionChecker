@@ -18,17 +18,18 @@ This function can easily be extended by a layperson with IAM experience by modif
 Take this example code block from checkAccess
 
 ```python
-    #First we're checking to see if there is an allow entitlement, and if that entitlement applies to all resources (resource == '*')
-    if sid.Resource == '*' and sid.Effect == 'Allow':
-        #Setting a custom Message to be written to cloudwatch if a there is a finding
-        message = "Data Store Access Risky Entitlement"
-        #Setting a new bad patterns for every check. badPatterns should always be a list even if you want one.
-        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem',
-        'dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
-        #Sending the 'Action' element of the IAM policy, alongside the list of bad patterns and our message to be checked
-        if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
-        #If there is a bad finding, this compliance must be set to NON_COMPLIANT for config to mark it as such
-            compliance = "NON_COMPLIANT"
+#First we're checking to see if there is an Allow entitlement,
+#and if that entitlement applies to all resources (resource == '*')
+if sid.Resource == '*' and sid.Effect == 'Allow':
+    #Setting a custom Message to be written to cloudwatch if a there is a finding
+    message = "Data Store Access Risky Entitlement"
+    #Setting a new bad patterns for every check. badPatterns should always be a list even if you want one.
+    badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem',
+    'dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
+    #Sending the 'Action' element of the IAM policy, alongside the list of bad patterns and our message to be checked
+    if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
+    #If there is a bad finding, this compliance must be set to NON_COMPLIANT for config to mark it as such
+        compliance = "NON_COMPLIANT"
 ```
 
 ## Exclusion Pattern
