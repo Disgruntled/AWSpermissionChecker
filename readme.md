@@ -23,9 +23,9 @@ Take this example code block from checkAccess
         #Setting a custom Message to be written to cloudwatch if a there is a finding
         message = "Data Store Access Risky Entitlement"
         #Setting a new bad patterns for every check. badPatterns should always be a list even if you want one.
-        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
-        #Sending the 'Action' element of the IAM policy, alongside the list of bad patterns and our logging message off to be checked
-        #badPatterns and the action list sent for evaluation later in code get normalized to lowercase.
+        badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem',
+        'dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
+        #Sending the 'Action' element of the IAM policy, alongside the list of bad patterns and our message to be checked
         if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
         #If there is a bad finding, this compliance must be set to NON_COMPLIANT for config to mark it as such
             compliance = "NON_COMPLIANT"
