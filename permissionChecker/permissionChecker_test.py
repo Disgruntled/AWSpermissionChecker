@@ -248,7 +248,11 @@ class ComplianceTest(unittest.TestCase):
     }
 '''
 
-
+    ruleParameters = '''
+    {
+	"ExceptionPattern": "admin"
+    }
+    '''
 
 
     def setUp(self):
@@ -264,7 +268,7 @@ class ComplianceTest(unittest.TestCase):
         Testing assumes and requires available AWS entitlements to read IAM
         '''
         RULE.ASSUME_ROLE_MODE = False
-        response = RULE.lambda_handler(build_lambda_configurationchange_event(self.sampleEvent1), {})
+        response = RULE.lambda_handler(build_lambda_configurationchange_event(self.sampleEvent1,self.ruleParameters), {})
         resp_expected = []
         #If customizing your own event, the resource id (AROAnnn) must match. Update here and in the event.
         resp_expected.append(build_expected_response('NON_COMPLIANT', 'AROAIY7FPU7KRV7IZBNPC', 'AWS::IAM::Role'))

@@ -135,10 +135,13 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
 
     ###Exclude based on regular expression. Update to match roles/users that you want excluded.
     ###TODO: make more robust to support multiple patterns more easily.
-    exclude = re.compile('excludepattern')
-    if exclude.search(principalArn.lower()) != None:
-        print('{} matches exclude pattern, halting evaluation'.format(principalArn))
-        return 'COMPLIANT'
+    try:
+        exclude = re.compile(valid_rule_parameters['ExceptionPattern'].lower())
+        if exclude.search(principalArn.lower()) != None:
+            print('{} matches exclude pattern, halting evaluation'.format(principalArn))
+            return 'COMPLIANT'
+    except:
+        print('No ExceptionPattern Parameter found')
     
     iamClient = boto3.client('iam')
 
@@ -155,8 +158,8 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
         #Loop through alls tatements, look for bad things
         for bar in policyDocument['PolicyVersion']['Document']['Statement']:
             statementBlock = statement(bar)
-            if checkDataAccess(statementBlock) == 'NON_COMPLIANT':
-    #STDOUT and straight to cloudwatch
+            if checkAccess(statementBlock) == 'NON_COMPLIANT':
+                #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))
                 print('Found in policy: {} Attached to role {}'.format(foo['policyArn'],principalArn))
                 compliance = "NON_COMPLIANT"
@@ -170,13 +173,6 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     return 'COMPLIANT'
 
         
-        
-
-    #research if non-default policy versions can be applied
-    #Get Policy Version(default)
-    #Check for badness, report NON_COMPLIANT for bad, COMPLIANT for good.
-
-    
 
 
     ###############################
@@ -184,7 +180,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     ###############################
 
 
-def checkDataAccess(sid):
+def checkAccess(sid):
     '''
         This is the function that does all the heavy lifting of the script
 
@@ -197,14 +193,22 @@ def checkDataAccess(sid):
         A single occurence of a bad finding will cause a role/user to be marked as 'NON_COMPLIANT', but we keep iterating incase there are multiple findings.
 
         the 'sid' object will return a string or list for all fields, where appropriate
+
+        Note that depending on your policies, Resources, Principals, Actions and their 'nots' can all be lists
+
+        You do not actually need to call 'checkList' if you want to evaluate something within this block, it is simply important that you do not set a COMPLIANCE value unless it is NON_COMPLIANT for a failed test
+
+        Keep in mind you can loop through any sid element that is a list.
     '''
+   
 
     compliance = ""
 
     #Look for access to too mnay data sources
     if sid.Resource == '*' and sid.Effect == 'Allow':
-        #Setting a new bad patterns for every check
+        #Setting a custom Message to be written to cloudwatch
         message = "Data Store Access Risky Entitlement"
+        #Setting a new bad patterns for every check. badPatterns should always be a list even if you want one.
         badPatterns = ['s3:getobject','s3:get*','sqs:receivemessage','dynamodb:GetItem','dynamodb:batchGetItem','dynamodb:getrecords', 'iam:passrole']
         if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"        
@@ -232,11 +236,28 @@ def checkDataAccess(sid):
         if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
 
+
     if sid.Resource == '*' and sid.Effect == 'Allow':
         message = "full admin entitlement"   
         badPatterns = ['*:*']
         if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
             compliance = "NON_COMPLIANT"
+
+    #Sample iterating through a statement with more than one resource
+    if isinstance(sid.Resource, list):
+        for resource in sid.Resource:
+            #First Resource Block
+            if resource == 'arn:aws:s3:::*/*' and sid.Effect == 'Allow':
+                message = "S3 Access Risky Entitlement"     
+                badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
+                if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
+                    compliance = "NON_COMPLIANT"
+            #Second Resource Block                          
+            if resource == 'arn:aws:s3:::*' and sid.Effect == 'Allow':
+                message = "S3 Access Risky Entitlement"     
+                badPatterns = ['s3:getobject','s3:get*','s3:*','*:*']
+                if checkList(sid.Action, badPatterns, message) == 'NON_COMPLIANT':
+                    compliance = "NON_COMPLIANT"
 
     if compliance == "NON_COMPLIANT":
         return 'NON_COMPLIANT'    
@@ -246,9 +267,10 @@ def checkDataAccess(sid):
     ################################################
     ################################################
 
-def checkList(actions, badPatterns,message=None):
+def checkList(elements, badPatterns,message=None):
     '''
-        expects an Iam action(string) or IAM actions(list) and a list of bad actions that are 'bad' and an optional detailed 'message' for cloudwatch to help identify/remediate.
+        expects an IAM action/resource/principal element(string) or a list of the elements in an action/resource/principal(list) 
+        and a list of patterns that are 'bad' and an optional detailed 'message' for cloudwatch to help identify/remediate.
         used from checkDataAccess() to direct the actions statement to be handled correct
 
         Necesarry because IAM statements can have on or many actions, one is treated as as an str, many is a list
@@ -256,12 +278,12 @@ def checkList(actions, badPatterns,message=None):
 
     compliance = ""
 
-    if isinstance(actions, list) == False:
-        if checkAction(actions,badPatterns, message) == 'NON_COMPLIANT':
+    if isinstance(elements, list) == False:
+        if checkElement(elements,badPatterns, message) == 'NON_COMPLIANT':
             return 'NON_COMPLIANT'
     else:
-        for action in actions:
-            if checkAction(action,badPatterns, message) == 'NON_COMPLIANT':
+        for element in elements:
+            if checkElement(element,badPatterns, message) == 'NON_COMPLIANT':
                 compliance = "NON_COMPLIANT"
 
     if compliance == "NON_COMPLIANT":
@@ -269,9 +291,9 @@ def checkList(actions, badPatterns,message=None):
                 
 
 
-def checkAction(action,badPatterns, message):
+def checkElement(element,badPatterns, message):
     '''
-        Checks an individual action statement for badness when combined with resource = *
+        Checks an individual element (resource/action/principal) statement for badness when combined with resource = *
 
     '''
     #TODO:move badPatterns list into a config file that can be managed outside of code
@@ -280,10 +302,13 @@ def checkAction(action,badPatterns, message):
 
 
     for pattern in badPatterns:
-        if action.lower() == pattern.lower():
-            print('Found Bad Action {}. it is a possible {}'.format(action, message))
+        if element.lower() == pattern.lower():
+            print('Found Bad Action {}. it is a possible {}'.format(element, message))
             return 'NON_COMPLIANT'
 
+################################
+#End of config evaluation logic#
+################################
     
 
 def evaluate_parameters(rule_parameters):
