@@ -17,7 +17,7 @@ This function can easily be extended by a layperson with IAM experience by modif
 
 Take this example code block from checkAccess
 
-```Python
+```python
     #First we're checking to see if there is an allow entitlement, and if that entitlement applies to all resources (resource == '*')
     if sid.Resource == '*' and sid.Effect == 'Allow':
         #Setting a custom Message to be written to cloudwatch if a there is a finding
