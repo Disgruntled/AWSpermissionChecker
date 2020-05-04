@@ -48,7 +48,7 @@ class statement:
 
     '''
 
-    def __init__(self,sid):
+    def __init__(self,sid,Path=None):
         self.Action = ''
         self.Resource = ''
         self.NotAction = ''
@@ -102,7 +102,12 @@ class statement:
         try: 
             self.Effect = sid['Effect']
         except:
-            self.Effect = None                     
+            self.Effect = None
+
+        try:
+            self.Path = Path     
+        except:
+            self.Path = None           
 
 
 
@@ -157,7 +162,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     
         #Loop through alls tatements, look for bad things
         for bar in policyDocument['PolicyVersion']['Document']['Statement']:
-            statementBlock = statement(bar)
+            statementBlock = statement(bar,Path=ci["configurationItem"]["configuration"]["path"])
             if checkAccess(statementBlock) == 'NON_COMPLIANT':
                 #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))

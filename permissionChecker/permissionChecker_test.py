@@ -291,8 +291,6 @@ def build_lambda_configurationchange_event(invoking_event, rule_parameters=None)
     }
     if rule_parameters:
         event_to_return['ruleParameters'] = rule_parameters
-    #exit(event_to_return)
-    #print(event_to_return)
     return event_to_return
 
 def build_lambda_scheduled_event(rule_parameters=None):

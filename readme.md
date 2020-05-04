@@ -34,6 +34,8 @@ if sid.Resource == '*' and sid.Effect == 'Allow':
 
 What you can check in with this is only limited by your creativity.
 
+the sid object currently contains any IAM policy statement, as well as the IAM PATH incase that is useful to a given usecase (EG: Do not mark roles/users in a certain path as NON_COMPLIANT)
+
 ## Exclusion Pattern
 
 This rule accepts 1 config rule parameter, ExceptionPattern, that will contain a pattern which if found in an IAM USER/ROLE will exclude them from compliance monitoring.
@@ -53,6 +55,8 @@ This is useful for excluding admins, as we expect someone to have a high level o
 -Unit tests (no aws credentials or environment required for local testing anymore!)
 
 -Supports looking at bad patterns in actions/principals/resources
+
+-IAM Paths in evaluations
 
 ## Major Todos
 
