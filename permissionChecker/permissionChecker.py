@@ -48,7 +48,7 @@ class statement:
 
     '''
 
-    def __init__(self,sid,Path=None):
+    def __init__(self,sid,Path=None,boundaryPolicyArn=None):
         self.Action = ''
         self.Resource = ''
         self.NotAction = ''
@@ -107,7 +107,14 @@ class statement:
         try:
             self.Path = Path     
         except:
-            self.Path = None           
+            self.Path = None        
+
+        try:
+            #a bit limited, only really useful for evaluating the presence of whether or not a boundary exists
+            #possible to do a regex/string comparison to see if the expected IAM boundary is present            
+            self.boundaryPolicyArn = boundaryPolicyArn     
+        except:
+            self.boundaryPolicyArn = None     
 
 
 
@@ -133,10 +140,22 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     2 -- if a None or a list of dictionary is returned, the old evaluation(s) which are not returned in the new evaluation list are returned as NOT_APPLICABLE by the Boilerplate code
     3 -- if None or an empty string, list or dict is returned, the Boilerplate code will put a "shadow" evaluation to feedback that the evaluation took place properly
     """
+    compliance = ""
 
     
+    
     ci = json.loads(event['invokingEvent'])
+
+    #extract a few useful things from the ci
     principalArn = ci["configurationItem"]["configuration"]["arn"]
+    path = ci["configurationItem"]["configuration"]["path"]
+    #permissionsBoundaryArn does not always exist in the CI, it only appears if it is present. Else the permissionsBoundary itself is just equal to the string value "None"
+    try:
+        boundaryPolicyArn = ci["configurationItem"]["configuration"]["permissionsBoundary"]["permissionsBoundaryArn"]
+    except:
+        boundaryPolicyArn = None
+
+
 
     ###Exclude based on regular expression. Update to match roles/users that you want excluded.
     ###TODO: make more robust to support multiple patterns more easily.
@@ -162,7 +181,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     
         #Loop through alls tatements, look for bad things
         for bar in policyDocument['PolicyVersion']['Document']['Statement']:
-            statementBlock = statement(bar,Path=ci["configurationItem"]["configuration"]["path"])
+            statementBlock = statement(bar,path, boundaryPolicyArn)
             if checkAccess(statementBlock) == 'NON_COMPLIANT':
                 #STDOUT and straight to cloudwatch
                 print('Bad Statement: {}'.format(bar))
